@@ -19,11 +19,11 @@ FROM bronze.erp_cust_az12
 GROUP BY cid
 HAVING COUNT(*) > 1 OR cid IS NULL
 
----- Check for old customers (bdate)
+---- Check for customers age greater than today's date (bdate)
 
 SELECT DISTINCT bdate
 FROM bronze.erp_cust_az12
-WHERE bdate < '1924-01-01' OR bdate > GETDATE();
+WHERE  bdate > GETDATE();
 
 ---- Check for unwanted spaces (gen)
 
@@ -52,7 +52,7 @@ FROM bronze.erp_cust_az12
 
 ------ Remove the "NAS" from id to integrate it with key column in crm_cust_info table (cid)
 ------ Check for Nulls or duplicates in primary key (cid)
------- Check for old customers (bdate)
+------ Check for customers age greater than today's date (bdate)
 ------ Check for unwanted spaces (gen)
 ------ Data Standarization & Consistency (gen) 
 
