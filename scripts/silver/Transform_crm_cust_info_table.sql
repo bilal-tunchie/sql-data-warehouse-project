@@ -32,6 +32,16 @@ FROM bronze.crm_cust_info;
 
 ---- Expectation: No Result
 
+INSERT INTO silver.crm_cust_info (
+	cst_id,
+	cst_key, 
+	cst_firstName,
+	cst_lastName,
+	cst_martial_status,
+	cst_gndr,
+	cst_create_date
+)
+	
 SELECT 
 	cst_id,
 	cst_key, 
