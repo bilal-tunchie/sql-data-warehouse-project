@@ -158,3 +158,27 @@ LEFT JOIN gold.dim_customers c
 ON c.customer_key = s.customer_key
 GROUP BY c.country
 ORDER BY total_customer_rev_by_country DESC
+
+------ ****** Ranking ****** ------
+
+---- Which 5 products generate the highest revenue?
+
+SELECT top 5
+	p.product_name, 
+	SUM(s.sales_amount) total_rev_by_product
+	, ROW_NUMBER() OVER(ORDER BY SUM(s.sales_amount) DESC) AS RANK_
+FROM gold.fact_sales s
+LEFT JOIN  gold.dim_products p
+ON p.product_key = s.product_key
+GROUP BY p.product_name
+
+---- What are the 5 worst-performing products in terms of sales?
+
+SELECT top 5
+	p.product_name, 
+	SUM(s.sales_amount) total_rev_by_product
+	, ROW_NUMBER() OVER(ORDER BY SUM(s.sales_amount)) AS RANK_
+FROM gold.fact_sales s
+LEFT JOIN  gold.dim_products p
+ON p.product_key = s.product_key
+GROUP BY p.product_name
