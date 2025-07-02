@@ -182,3 +182,67 @@ FROM gold.fact_sales s
 LEFT JOIN  gold.dim_products p
 ON p.product_key = s.product_key
 GROUP BY p.product_name
+
+------ ****** Change over time ****** ------
+---- Analyze sales performance over time
+
+SELECT 
+    YEAR(order_date) AS years,
+	MONTH(order_date) AS months,
+	SUM(sales_amount) AS rev_by_years,
+	COUNT(DISTINCT customer_key) AS customers,
+	SUM(quantity) AS quantity
+FROM gold.fact_sales
+GROUP BY YEAR(order_date), MONTH(order_date)
+HAVING MONTH(order_date) IS NOT NULL
+ORDER BY years, months
+
+------ ****** Cumulative Analysis ****** ------
+---- Aggregate the data progressively over time
+
+SELECT *,SUM(rev_by_years) OVER(PARTITION BY year(month_)  ORDER BY month_)
+FROM (
+	SELECT 
+		DATETRUNC(month, order_date) AS month_,
+		SUM(sales_amount) AS rev_by_years
+	FROM gold.fact_sales
+	WHERE order_date IS NOT NULL
+	GROUP BY DATETRUNC(month, order_date)
+	--ORDER BY month_
+)t
+
+------ ****** Performance Analysis ****** ------
+/*---- Analyze the yearly performance of products by comparing their sales
+ to both the average sales performance of the product and the previous year's sales */
+
+WITH yearly_products_sales AS (
+	SELECT 
+		YEAR(f.order_date) order_year,
+		p.product_name,
+		SUM(f.sales_amount) current_year
+	FROM gold.fact_sales f
+	LEFT JOIN gold.dim_products p
+	ON f.product_key = p.product_key
+	WHERE f.order_date IS NOT NULL
+	GROUP BY p.product_name, YEAR(f.order_date)
+)
+
+
+SELECT 
+	*, 
+	AVG(current_year) OVER(PARTITION BY product_name) AS avg_product_sales,
+	current_year - AVG(current_year) OVER(PARTITION BY product_name) AS diff_avg,
+	CASE
+		WHEN current_year - AVG(current_year) OVER(PARTITION BY product_name) > 0 THEN 'Above avg'
+		WHEN current_year - AVG(current_year) OVER(PARTITION BY product_name) < 0 THEN 'Below avg'
+		ELSE 'avg'
+	END AS avg_status,
+	lag(current_year) over(PARTITION BY product_name ORDER BY order_year) AS previous_year,
+	current_year - lag(current_year) over(PARTITION BY product_name ORDER BY order_year)  AS diff_previous,
+	CASE
+		WHEN current_year - lag(current_year) over(PARTITION BY product_name ORDER BY order_year) > 0 THEN 'Increasing'
+		WHEN current_year - lag(current_year) over(PARTITION BY product_name ORDER BY order_year) < 0 THEN 'Decreasing'
+		ELSE 'No Change'
+	END AS avg_status
+FROM yearly_products_sales 
+ORDER BY product_name, order_year
