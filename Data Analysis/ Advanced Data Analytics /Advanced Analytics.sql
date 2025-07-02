@@ -1,3 +1,5 @@
+USE DataWarehouse;
+
 ------ ****** Change over time ****** ------
 	
 ---- Analyze sales performance over time
